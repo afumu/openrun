@@ -1,6 +1,17 @@
-# OpenRun Vercel Sandbox Coding Agent
+# OpenRun
 
-OpenRun 是一个最小可运行的 Vercel Sandbox Coding Agent。模型供应商通过 OpenAI-compatible 接口配置，Agent 本身叫 `coding`，执行代码时使用长期存在的 Vercel Sandbox 工作区，并把会话历史写入本地 SQLite。
+OpenRun 是一个 Coding Agent 平台原型。它把大模型 Agent、代码读写工具、命令执行工具和 Vercel Sandbox 组合在一起，让 Agent 可以在隔离的云端沙箱里读取代码、修改文件、运行命令和返回结果。
+
+这个项目的目标是提供一个最小但完整的基础架构：外部 Agent 平台负责对话、工具调度和会话管理，真正的代码执行发生在 Vercel Sandbox 容器中。这样可以把本机环境和不可信代码隔离开，同时保留长期会话、文件状态和执行历史。
+
+当前版本已经包含：
+
+- OpenAI-compatible 模型接入，默认配置 DeepSeek。
+- Vercel Sandbox 工作区启动、恢复和命令执行。
+- Coding Agent 常用工具：读取文件、写文件、追加文件、单次编辑、多次编辑、搜索文件、搜索代码、运行命令。
+- 多轮 CLI 对话，支持流式输出和工具调用状态展示。
+- 本地 SQLite 会话存储，用于保存 conversations 和事件流。
+- 默认 persistent sandbox 配置，让同一个工作区可以跨 CLI 运行继续使用。
 
 ## 1. Install
 
