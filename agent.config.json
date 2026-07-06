@@ -1,0 +1,37 @@
+{
+  "defaultAgent": "coding",
+  "storage": {
+    "sqlitePath": ".openrun/openrun.sqlite"
+  },
+  "providers": {
+    "deepseek": {
+      "type": "openai-compatible",
+      "baseURL": "https://api.deepseek.com",
+      "apiKeyEnv": "DEEPSEEK_API_KEY"
+    }
+  },
+  "agents": {
+    "coding": {
+      "provider": "deepseek",
+      "model": "deepseek-v4-flash",
+      "maxToolSteps": 20,
+      "tools": ["filesystem", "shell"],
+      "workspace": "default"
+    }
+  },
+  "workspaces": {
+    "default": {
+      "sandboxName": "openrun-default-workspace",
+      "mode": "persistent",
+      "runtime": "node24",
+      "networkPolicy": "deny-all",
+      "timeoutMs": 600000,
+      "stopOnExit": true,
+      "snapshotExpiration": 0,
+      "keepLastSnapshots": {
+        "count": 1,
+        "deleteEvicted": true
+      }
+    }
+  }
+}
