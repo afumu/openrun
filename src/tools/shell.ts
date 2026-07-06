@@ -6,6 +6,7 @@ export type RunCommandInput = {
   cwd?: string;
   env?: Record<string, string>;
   timeoutMs?: number;
+  detached?: boolean;
   maxOutputChars?: number;
 };
 
@@ -29,6 +30,7 @@ export async function runCommand(
     cwd,
     env: input.env ?? {},
     timeoutMs: input.timeoutMs,
+    detached: input.detached,
   });
   const stdout = await command.stdout();
   const stderr = await command.stderr();

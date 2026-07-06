@@ -41,4 +41,28 @@ describe('runCommand', () => {
       originalStderrLength: 7,
     });
   });
+
+  it('passes detached mode to sandbox commands', async () => {
+    const runSandboxCommand = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      stdout: vi.fn().mockResolvedValue(''),
+      stderr: vi.fn().mockResolvedValue(''),
+    });
+    const workspace = new SandboxWorkspace({
+      workspaceRoot: '/vercel/sandbox',
+      fs: SandboxWorkspace.local({ workspaceRoot: process.cwd() }).fs,
+      runSandboxCommand,
+    });
+
+    await runCommand(workspace, {
+      command: 'npm',
+      args: ['run', 'dev'],
+      cwd: '.',
+      detached: true,
+    });
+
+    expect(runSandboxCommand).toHaveBeenCalledWith(expect.objectContaining({
+      detached: true,
+    }));
+  });
 });

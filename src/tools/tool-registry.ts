@@ -13,6 +13,7 @@ import {
   searchFiles,
   writeFile,
 } from './filesystem.js';
+import { startPreview } from './preview.js';
 import { runCommand } from './shell.js';
 
 export type ToolResult = unknown;
@@ -41,6 +42,7 @@ export function createToolRegistry(workspace: SandboxWorkspace): ToolRegistry {
     createTool('search_files', 'Search file and directory paths in the sandbox workspace.', searchFilesSchema, (args) => searchFiles(workspace, args)),
     createTool('search_code', 'Search text file contents in the sandbox workspace.', searchCodeSchema, (args) => searchCode(workspace, args)),
     createTool('run_command', 'Run a command process in the sandbox workspace.', runCommandSchema, (args) => runCommand(workspace, args)),
+    createTool('start_preview', 'Start a web preview server in the sandbox and return a public URL.', startPreviewSchema, (args) => startPreview(workspace, args)),
   ]) {
     tools.set(tool.definition.function.name, tool);
   }
@@ -149,7 +151,18 @@ const runCommandSchema = z.object({
   cwd: z.string().optional(),
   env: z.record(z.string(), z.string()).optional(),
   timeoutMs: z.number().int().positive().optional(),
+  detached: z.boolean().optional(),
   maxOutputChars: z.number().int().positive().optional(),
+});
+
+const startPreviewSchema = z.object({
+  command: z.string().min(1),
+  args: z.array(z.string()).optional(),
+  cwd: z.string().optional(),
+  port: z.number().int().min(1).max(65535),
+  env: z.record(z.string(), z.string()).optional(),
+  waitForPath: z.string().optional(),
+  startupTimeoutMs: z.number().int().positive().optional(),
 });
 
 function zodObjectToJsonSchema(schema: z.ZodType): Record<string, unknown> {
