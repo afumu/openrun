@@ -24,6 +24,16 @@ const workspaceSchema = z.object({
   networkPolicy: z.enum(['deny-all', 'allow-all']).default('deny-all'),
   timeoutMs: z.number().int().positive().default(600_000),
   stopOnExit: z.boolean().default(true),
+  ports: z.array(z.number().int().min(1).max(65535)).max(4).default([3000, 5173, 8000, 4173]),
+  preview: z
+    .object({
+      defaultPort: z.number().int().min(1).max(65535).default(5173),
+      startupTimeoutMs: z.number().int().positive().default(30_000),
+    })
+    .default({
+      defaultPort: 5173,
+      startupTimeoutMs: 30_000,
+    }),
   snapshotExpiration: z.number().int().min(0).default(0),
   keepLastSnapshots: z
     .object({
@@ -113,6 +123,11 @@ export function createDefaultAgentConfig(cwd = process.cwd()): OpenRunConfig {
         networkPolicy: 'deny-all',
         timeoutMs: 600_000,
         stopOnExit: true,
+        ports: [3000, 5173, 8000, 4173],
+        preview: {
+          defaultPort: 5173,
+          startupTimeoutMs: 30_000,
+        },
         snapshotExpiration: 0,
         keepLastSnapshots: {
           count: 1,

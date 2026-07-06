@@ -27,6 +27,11 @@
       "networkPolicy": "deny-all",
       "timeoutMs": 600000,
       "stopOnExit": true,
+      "ports": [3000, 5173, 8000, 4173],
+      "preview": {
+        "defaultPort": 5173,
+        "startupTimeoutMs": 30000
+      },
       "snapshotExpiration": 0,
       "keepLastSnapshots": {
         "count": 1,

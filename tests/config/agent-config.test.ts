@@ -39,6 +39,11 @@ describe('loadAgentConfig', () => {
             mode: 'persistent',
             runtime: 'node24',
             networkPolicy: 'deny-all',
+            ports: [3000, 5173, 8000, 4173],
+            preview: {
+              defaultPort: 5173,
+              startupTimeoutMs: 30_000,
+            },
             stopOnExit: true,
             snapshotExpiration: 0,
             keepLastSnapshots: {
@@ -80,6 +85,11 @@ describe('loadAgentConfig', () => {
             default: {
               sandboxName: 'custom-sandbox',
               networkPolicy: 'allow-all',
+              ports: [3000],
+              preview: {
+                defaultPort: 3000,
+                startupTimeoutMs: 10_000,
+              },
             },
           },
         }),
@@ -100,6 +110,11 @@ describe('loadAgentConfig', () => {
         mode: 'persistent',
         runtime: 'node24',
         networkPolicy: 'allow-all',
+        ports: [3000],
+        preview: {
+          defaultPort: 3000,
+          startupTimeoutMs: 10_000,
+        },
         stopOnExit: true,
       });
     } finally {

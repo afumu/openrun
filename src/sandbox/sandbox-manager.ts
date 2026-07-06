@@ -9,6 +9,11 @@ export type SandboxWorkspaceConfig = {
   networkPolicy: NetworkPolicy;
   timeoutMs: number;
   stopOnExit: boolean;
+  ports: number[];
+  preview: {
+    defaultPort: number;
+    startupTimeoutMs: number;
+  };
   snapshotExpiration: number;
   keepLastSnapshots: {
     count: number;
@@ -26,7 +31,10 @@ export type SandboxLike = {
     cwd?: string;
     env?: Record<string, string>;
     timeoutMs?: number;
+    detached?: boolean;
   }): Promise<WorkspaceCommandResult>;
+  domain(port: number): string;
+  update(params: { ports?: number[] }): Promise<void>;
   stop(): Promise<unknown>;
 };
 
@@ -37,6 +45,7 @@ export type GetOrCreateSandbox = (params: {
   persistent: boolean;
   networkPolicy: NetworkPolicy;
   snapshotExpiration: number;
+  ports: number[];
   keepLastSnapshots: {
     count: number;
     deleteEvicted?: boolean;
@@ -66,14 +75,34 @@ export class SandboxManager {
       persistent: config.mode === 'persistent',
       networkPolicy: config.networkPolicy,
       snapshotExpiration: config.snapshotExpiration,
+      ports: config.ports,
       keepLastSnapshots: config.keepLastSnapshots,
       resume: true,
     });
+    let exposedPorts = [...config.ports];
+    const ensurePort = async (port: number) => {
+      if (exposedPorts.includes(port)) {
+        return;
+      }
+
+      const nextPorts = [...exposedPorts, port];
+
+      if (nextPorts.length > 4) {
+        throw new Error(
+          `Vercel Sandbox supports at most 4 exposed ports; configured ports: ${exposedPorts.join(', ')}`,
+        );
+      }
+
+      await sandbox.update({ ports: nextPorts });
+      exposedPorts = nextPorts;
+    };
 
     const workspace = new SandboxWorkspace({
       workspaceRoot: '/vercel/sandbox',
       fs: sandbox.fs,
       runSandboxCommand: (input) => sandbox.runCommand(input),
+      getDomain: (port) => sandbox.domain(port),
+      ensurePort,
     });
 
     return {

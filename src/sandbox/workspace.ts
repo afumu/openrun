@@ -41,23 +41,30 @@ export type RunWorkspaceCommandInput = {
   cwd: string;
   env: Record<string, string>;
   timeoutMs?: number;
+  detached?: boolean;
 };
 
 export type SandboxWorkspaceOptions = {
   workspaceRoot: string;
   fs: WorkspaceFileSystem;
   runSandboxCommand?: (input: RunWorkspaceCommandInput) => Promise<WorkspaceCommandResult>;
+  getDomain?: (port: number) => string;
+  ensurePort?: (port: number) => Promise<void>;
 };
 
 export class SandboxWorkspace {
   readonly workspaceRoot: string;
   readonly fs: WorkspaceFileSystem;
   private readonly runSandboxCommand?: (input: RunWorkspaceCommandInput) => Promise<WorkspaceCommandResult>;
+  private readonly getDomain?: (port: number) => string;
+  private readonly ensureSandboxPort?: (port: number) => Promise<void>;
 
   constructor(options: SandboxWorkspaceOptions) {
     this.workspaceRoot = path.resolve(options.workspaceRoot);
     this.fs = options.fs;
     this.runSandboxCommand = options.runSandboxCommand;
+    this.getDomain = options.getDomain;
+    this.ensureSandboxPort = options.ensurePort;
   }
 
   static local(options: { workspaceRoot: string }): SandboxWorkspace {
@@ -110,6 +117,22 @@ export class SandboxWorkspace {
     }
 
     return this.runSandboxCommand(input);
+  }
+
+  domain(port: number): string {
+    if (!this.getDomain) {
+      throw new Error('Sandbox domain resolver is not configured');
+    }
+
+    return this.getDomain(port);
+  }
+
+  async ensurePort(port: number): Promise<void> {
+    if (!this.ensureSandboxPort) {
+      throw new Error('Sandbox port manager is not configured');
+    }
+
+    await this.ensureSandboxPort(port);
   }
 }
 
