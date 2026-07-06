@@ -187,4 +187,36 @@ describe('SandboxManager', () => {
     expect(update).toHaveBeenCalledWith({ ports: [3000, 5173] });
     expect(handle.workspace.domain(5173)).toBe('https://preview-5173.vercel.run');
   });
+
+  it('ignores Vercel internal routes when syncing preview ports', async () => {
+    const update = vi.fn().mockResolvedValue(undefined);
+    const getOrCreate = vi.fn().mockResolvedValue({
+      name: 'openrun-test',
+      fs: {},
+      runCommand: vi.fn(),
+      stop: vi.fn(),
+      update,
+      domain: vi.fn((port: number) => `https://preview-${port}.vercel.run`),
+      routes: [{ port: 26661 }],
+    });
+    const manager = new SandboxManager({ getOrCreate });
+
+    await manager.start({
+      sandboxName: 'openrun-test',
+      mode: 'persistent',
+      runtime: 'node24',
+      networkPolicy: 'deny-all',
+      timeoutMs: 600_000,
+      stopOnExit: true,
+      ports: [3000, 5173, 8000, 4173],
+      preview: {
+        defaultPort: 5173,
+        startupTimeoutMs: 30_000,
+      },
+      snapshotExpiration: 0,
+      keepLastSnapshots: { count: 1, deleteEvicted: true },
+    });
+
+    expect(update).toHaveBeenCalledWith({ ports: [3000, 5173, 8000, 4173] });
+  });
 });

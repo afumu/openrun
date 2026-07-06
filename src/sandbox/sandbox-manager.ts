@@ -80,7 +80,12 @@ export class SandboxManager {
       keepLastSnapshots: config.keepLastSnapshots,
       resume: true,
     });
-    let exposedPorts = uniquePorts((sandbox.routes ?? []).map((route) => route.port));
+    const configuredPorts = uniquePorts(config.ports);
+    let exposedPorts = uniquePorts(
+      (sandbox.routes ?? [])
+        .map((route) => route.port)
+        .filter((port) => configuredPorts.includes(port)),
+    );
     const ensurePorts = async (ports: number[]) => {
       const nextPorts = uniquePorts([...exposedPorts, ...ports]);
 
@@ -90,7 +95,7 @@ export class SandboxManager {
 
       if (nextPorts.length > 4) {
         throw new Error(
-          `Vercel Sandbox supports at most 4 exposed ports; configured ports: ${exposedPorts.join(', ')}`,
+          `Vercel Sandbox supports at most 4 exposed ports; requested ports: ${nextPorts.join(', ')}`,
         );
       }
 
@@ -101,7 +106,7 @@ export class SandboxManager {
       await ensurePorts([port]);
     };
 
-    await ensurePorts(config.ports);
+    await ensurePorts(configuredPorts);
 
     const workspace = new SandboxWorkspace({
       workspaceRoot: '/vercel/sandbox',
