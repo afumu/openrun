@@ -189,14 +189,71 @@ describe('runCodingAgent', () => {
       await rm(cwd, { recursive: true, force: true });
     }
   });
+
+  it('instructs the model to choose Vite or Next.js and start previews', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'openrun-agent-'));
+    const store = await SqliteStore.open(join(cwd, 'openrun.sqlite'));
+
+    try {
+      store.migrate();
+      const workspaceRecord = store.upsertWorkspace({
+        name: 'default',
+        sandboxName: 'openrun-test',
+        mode: 'persistent',
+        runtime: 'node24',
+        networkPolicyJson: JSON.stringify('deny-all'),
+        persistent: true,
+        snapshotExpiration: 0,
+      });
+      const conversation = store.createConversation({
+        workspaceId: workspaceRecord.id,
+        agentName: 'coding',
+        providerName: 'test-provider',
+        model: 'test-model',
+        firstPrompt: 'create a simple html app',
+      });
+      const workspace = SandboxWorkspace.local({ workspaceRoot: join(cwd, 'workspace') });
+      const modelClient = new ScriptedModelClient([
+        {
+          id: 'msg_final',
+          content: 'ok',
+          toolCalls: [],
+        },
+      ]);
+
+      await runCodingAgent({
+        prompt: 'create a simple html app',
+        conversationId: conversation.id,
+        model: 'test-model',
+        maxToolSteps: 5,
+        modelClient,
+        store,
+        workspace,
+        tools: createToolRegistry(workspace),
+      });
+
+      const systemMessage = modelClient.inputs[0].messages[0].content;
+
+      expect(systemMessage).toContain('simple HTML');
+      expect(systemMessage).toContain('Vite');
+      expect(systemMessage).toContain('Next.js');
+      expect(systemMessage).toContain('start_preview');
+      expect(systemMessage).toContain('0.0.0.0');
+    } finally {
+      store.close();
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
 });
 
 class ScriptedModelClient implements ModelClient {
   private index = 0;
+  readonly inputs: CreateMessageInput[] = [];
 
   constructor(private readonly responses: Awaited<ReturnType<ModelClient['createMessage']>>[]) {}
 
-  async createMessage(): ReturnType<ModelClient['createMessage']> {
+  async createMessage(input: CreateMessageInput): ReturnType<ModelClient['createMessage']> {
+    this.inputs.push(input);
     const response = this.responses[this.index];
     this.index += 1;
 
