@@ -33,6 +33,7 @@ export type SandboxLike = {
     timeoutMs?: number;
     detached?: boolean;
   }): Promise<WorkspaceCommandResult>;
+  routes?: Array<{ port: number }>;
   domain(port: number): string;
   update(params: { ports?: number[] }): Promise<void>;
   stop(): Promise<unknown>;
@@ -79,13 +80,13 @@ export class SandboxManager {
       keepLastSnapshots: config.keepLastSnapshots,
       resume: true,
     });
-    let exposedPorts = [...config.ports];
-    const ensurePort = async (port: number) => {
-      if (exposedPorts.includes(port)) {
+    let exposedPorts = uniquePorts((sandbox.routes ?? []).map((route) => route.port));
+    const ensurePorts = async (ports: number[]) => {
+      const nextPorts = uniquePorts([...exposedPorts, ...ports]);
+
+      if (samePorts(exposedPorts, nextPorts)) {
         return;
       }
-
-      const nextPorts = [...exposedPorts, port];
 
       if (nextPorts.length > 4) {
         throw new Error(
@@ -96,6 +97,11 @@ export class SandboxManager {
       await sandbox.update({ ports: nextPorts });
       exposedPorts = nextPorts;
     };
+    const ensurePort = async (port: number) => {
+      await ensurePorts([port]);
+    };
+
+    await ensurePorts(config.ports);
 
     const workspace = new SandboxWorkspace({
       workspaceRoot: '/vercel/sandbox',
@@ -115,6 +121,14 @@ export class SandboxManager {
       },
     };
   }
+}
+
+function uniquePorts(ports: number[]): number[] {
+  return [...new Set(ports)];
+}
+
+function samePorts(left: number[], right: number[]): boolean {
+  return left.length === right.length && left.every((port, index) => port === right[index]);
 }
 
 async function createVercelSandbox(
