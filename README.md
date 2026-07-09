@@ -1,17 +1,19 @@
+[![中文](https://img.shields.io/badge/lang-%E4%B8%AD%E6%96%87-blue.svg)](./README.zh-CN.md)
+
 # OpenRun
 
-OpenRun 是一个 Coding Agent 平台原型。它把大模型 Agent、代码读写工具、命令执行工具和 Vercel Sandbox 组合在一起，让 Agent 可以在隔离的云端沙箱里读取代码、修改文件、运行命令和返回结果。
+OpenRun is a prototype Coding Agent platform. It combines LLM agents, code read/write tools, command execution tools, and Vercel Sandbox so agents can read code, modify files, run commands, and return results from an isolated cloud sandbox.
 
-这个项目的目标是提供一个最小但完整的基础架构：外部 Agent 平台负责对话、工具调度和会话管理，真正的代码执行发生在 Vercel Sandbox 容器中。这样可以把本机环境和不可信代码隔离开，同时保留长期会话、文件状态和执行历史。
+The goal of this project is to provide a minimal but complete foundation: the external agent platform handles conversation, tool orchestration, and session management, while the actual code execution happens inside a Vercel Sandbox container. This keeps the local machine isolated from untrusted code while preserving long-running sessions, file state, and execution history.
 
-当前版本已经包含：
+The current version includes:
 
-- OpenAI-compatible 模型接入，默认配置 DeepSeek。
-- Vercel Sandbox 工作区启动、恢复和命令执行。
-- Coding Agent 常用工具：读取文件、写文件、追加文件、单次编辑、多次编辑、搜索文件、搜索代码、运行命令、启动预览服务。
-- 多轮 CLI 对话，支持流式输出和工具调用状态展示。
-- 本地 SQLite 会话存储，用于保存 conversations 和事件流。
-- 默认 persistent sandbox 配置，让同一个工作区可以跨 CLI 运行继续使用。
+- OpenAI-compatible model integration, with DeepSeek configured by default.
+- Vercel Sandbox workspace startup, resume, and command execution.
+- Common Coding Agent tools: read files, write files, append files, single edits, multi-edits, file search, code search, command execution, and preview server startup.
+- Multi-turn CLI conversations with streaming output and tool-call status display.
+- Local SQLite session storage for conversations and event streams.
+- A persistent sandbox configuration by default, so the same workspace can continue across CLI runs.
 
 ## 1. Install
 
@@ -21,7 +23,7 @@ npm install
 
 ## 2. Configure Environment
 
-不要把真实 key 写进仓库。推荐用本地 `.env.local` 管理，CLI 会自动读取 `.env.local` 和 `.env`：
+Do not commit real keys to the repository. The recommended setup is to use a local `.env.local`; the CLI automatically loads both `.env.local` and `.env`:
 
 ```dotenv
 DEEPSEEK_API_KEY=your-deepseek-key
@@ -29,14 +31,14 @@ DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-v4-flash
 ```
 
-Vercel Sandbox 鉴权二选一：
+Choose one of the following ways to authenticate Vercel Sandbox:
 
 ```bash
 vercel link
 vercel env pull
 ```
 
-或者在外部服务器上使用 access token：
+Or use an access token on an external server:
 
 ```dotenv
 VERCEL_TEAM_ID=team_xxx
@@ -44,7 +46,7 @@ VERCEL_PROJECT_ID=prj_xxx
 VERCEL_TOKEN=your-vercel-access-token
 ```
 
-模型、Agent、workspace 和 SQLite 路径在 `agent.config.json` 里配置：
+Models, agents, workspaces, and the SQLite path are configured in `agent.config.json`:
 
 ```json
 {
@@ -55,7 +57,7 @@ VERCEL_TOKEN=your-vercel-access-token
 }
 ```
 
-`.openrun/` 是本地运行历史目录，已经加入 `.gitignore`。
+`.openrun/` is the local runtime history directory and is already included in `.gitignore`.
 
 ## 3. Run The Agent
 
@@ -63,27 +65,27 @@ VERCEL_TOKEN=your-vercel-access-token
 npm run dev -- "Write a tiny JavaScript file, run it in the sandbox, and tell me the output."
 ```
 
-默认不传 prompt 时会立刻创建一个新的 conversation，并进入交互式会话。后续每一行输入都会继续同一个 Agent 上下文，输入 `/exit`、`exit`、`quit`、`.exit` 或 `:q` 退出：
+When no prompt is provided, the CLI immediately creates a new conversation and enters an interactive session. Each following input line continues the same agent context. Enter `/exit`, `exit`, `quit`, `.exit`, or `:q` to leave:
 
 ```bash
 npm run dev
 ```
 
-对话过程中，Assistant 内容会流式输出；工具调用只显示简短状态，例如 `[tool] read_file src/index.ts` 和 `[tool] done read_file`，不会把完整工具结果刷到控制台。
+During the conversation, assistant content streams to the terminal. Tool calls only display short status lines, such as `[tool] read_file src/index.ts` and `[tool] done read_file`, instead of printing full tool results to the console.
 
-列出历史会话：
+List previous sessions:
 
 ```bash
 npm run dev -- --list-sessions
 ```
 
-继续指定会话：
+Continue a specific session:
 
 ```bash
 npm run dev -- --continue <conversation-id>
 ```
 
-也可以直接对指定会话执行一轮：
+You can also run a single turn against a specific session:
 
 ```bash
 npm run dev -- --continue <conversation-id> "run tests again"
@@ -91,33 +93,33 @@ npm run dev -- --continue <conversation-id> "run tests again"
 
 ## Preview Web Apps
 
-当 Agent 构建 Web 应用时，可以在 Vercel Sandbox 内启动服务，并返回一个可直接访问的公开预览链接。
+When the agent builds a web application, it can start a service inside Vercel Sandbox and return a public preview URL that can be opened directly.
 
-简单 HTML、静态页面或小型 demo 默认使用 Vite：
+Simple HTML pages, static sites, and small demos use Vite by default:
 
 ```bash
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-更复杂的应用，例如多页面、API route、服务端渲染、登录权限或后台系统，默认使用 Next.js：
+More complex applications, such as multi-page apps, API routes, server-side rendering, authentication, or admin systems, use Next.js by default:
 
 ```bash
 npm run dev -- --hostname 0.0.0.0 --port 3000
 ```
 
-`start_preview` 工具会暴露 sandbox 端口、以 detached 模式启动服务、等待服务可访问，并返回 URL。服务日志会写到 `.openrun/previews/<port>.log`，避免把大量日志刷到控制台。
+The `start_preview` tool exposes the sandbox port, starts the service in detached mode, waits until the service is reachable, and returns the URL. Service logs are written to `.openrun/previews/<port>.log` to avoid flooding the console.
 
-预览服务只在 sandbox session 存活期间可用。默认 `stopOnExit: true`，CLI 退出会停止 sandbox 和预览进程；如果希望预览链接在 CLI 退出后继续可用，可以把 workspace 配置里的 `stopOnExit` 改成 `false`，并设置更长的 `timeoutMs`。
+Preview services are only available while the sandbox session is alive. By default, `stopOnExit: true`, so leaving the CLI stops both the sandbox and preview processes. To keep preview URLs available after the CLI exits, set the workspace `stopOnExit` option to `false` and use a longer `timeoutMs`.
 
 ## Storage Model
 
-SQLite 默认写到：
+SQLite is written to the following path by default:
 
 ```txt
 .openrun/openrun.sqlite
 ```
 
-第一版只有三张核心表：
+The first version has three core tables:
 
 ```txt
 sandbox_workspaces
@@ -125,7 +127,7 @@ conversations
 conversation_events
 ```
 
-关系是：
+The relationship is:
 
 ```txt
 sandbox_workspaces.id -> conversations.workspace_id
@@ -133,26 +135,26 @@ conversations.id -> conversation_events.conversation_id
 conversation_events.id -> conversation_events.parent_event_id
 ```
 
-`conversations` 类似 Claude Code 的 `sessions-index.json`，用于快速列出历史会话；`conversation_events` 类似每个 session 的 JSONL 事件流，用来恢复上下文。
+`conversations` is similar to Claude Code's `sessions-index.json` and is used to list previous sessions quickly. `conversation_events` is similar to a JSONL event stream for each session and is used to restore context.
 
 ## Code Map
 
-- `src/cli.ts`: 命令行入口。
-- `src/cli/app.ts`: CLI 编排逻辑。
-- `src/config/agent-config.ts`: `agent.config.json` 加载和默认配置。
-- `src/storage/sqlite-store.ts`: SQLite schema、会话索引和事件流。
-- `src/agent/coding-agent.ts`: 通用 Coding Agent loop。
-- `src/model/openai-compatible-client.ts`: OpenAI-compatible 模型客户端。
-- `src/sandbox/sandbox-manager.ts`: 命名 persistent Vercel Sandbox 启动/恢复。
-- `src/sandbox/workspace.ts`: sandbox 工作区和路径安全。
-- `src/tools/`: 文件系统工具和命令工具。
+- `src/cli.ts`: CLI entry point.
+- `src/cli/app.ts`: CLI orchestration logic.
+- `src/config/agent-config.ts`: `agent.config.json` loading and default configuration.
+- `src/storage/sqlite-store.ts`: SQLite schema, session index, and event stream.
+- `src/agent/coding-agent.ts`: General Coding Agent loop.
+- `src/model/openai-compatible-client.ts`: OpenAI-compatible model client.
+- `src/sandbox/sandbox-manager.ts`: Named persistent Vercel Sandbox startup and resume.
+- `src/sandbox/workspace.ts`: Sandbox workspace and path safety.
+- `src/tools/`: File system tools and command tools.
 
 ## Safety Defaults
 
-- `persistent: true`: 默认使用命名 sandbox，文件系统可以跨 CLI 运行恢复。
-- `networkPolicy: "deny-all"`: 默认禁止 sandbox 访问公网。
-- Secret 不会自动注入 sandbox。不要把生产 API key 放进 tool call 的 `env` 或写入 sandbox 文件。
-- 工具输出写入 SQLite 前会截断，避免本地数据库无限增长。
+- `persistent: true`: named sandboxes are used by default, so the file system can be restored across CLI runs.
+- `networkPolicy: "deny-all"`: sandbox network access is denied by default.
+- Secrets are not automatically injected into the sandbox. Do not put production API keys in tool-call `env` values or write them to sandbox files.
+- Tool output is truncated before being written to SQLite to prevent unbounded local database growth.
 
 ## Checks
 
@@ -161,3 +163,36 @@ npm test
 npm run typecheck
 npm run build
 ```
+
+## SWE-bench Pro Smoke Test
+
+Run the first 5 examples from the public test split and use the current OpenRun Agent to generate the patch JSON required by the official evaluator:
+
+```bash
+npm run swebench:pro -- --limit 5 --max-tool-steps 80
+```
+
+Output is written to the following paths by default:
+
+```txt
+.openrun/swebench-pro/first5/raw_samples.jsonl
+.openrun/swebench-pro/first5/openrun_patches.json
+```
+
+Then score the results with the official evaluation repository:
+
+```bash
+git clone https://github.com/scaleapi/SWE-bench_Pro-os.git .openrun/SWE-bench_Pro-os
+cd .openrun/SWE-bench_Pro-os
+pip install -r requirements.txt
+python swe_bench_pro_eval.py \
+  --raw_sample_path ../swebench-pro/first5/raw_samples.jsonl \
+  --patch_path ../swebench-pro/first5/openrun_patches.json \
+  --output_dir ../swebench-pro/first5/eval \
+  --scripts_dir run_scripts \
+  --num_workers 2 \
+  --dockerhub_username jefzda \
+  --use_local_docker
+```
+
+During patch generation, each instance uses a dedicated Vercel Sandbox and temporarily sets the network policy to `allow-all` so it can clone the target GitHub repository. The default sandbox timeout is 45 minutes to stay compatible with the Vercel Hobby plan limit.
